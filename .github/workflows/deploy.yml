@@ -35,54 +35,52 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Check build output
+      - name: Find build output
         run: |
+          echo "===== HTML FILES ====="
+          find . -type f \( -name "index.html" -o -name "_shell.html" \) -not -path "./node_modules/*" -print
+
           echo "===== DIST ====="
           if [ -d "dist" ]; then
-            find dist -maxdepth 3 -type f -print
-          else
-            echo "No dist directory"
+            find dist -maxdepth 4 -type f -print
           fi
 
           echo "===== OUTPUT ====="
           if [ -d ".output" ]; then
-            find .output -maxdepth 4 -type f -print
-          else
-            echo "No .output directory"
+            find .output -maxdepth 5 -type f -print
           fi
 
-      - name: Prepare GitHub Pages
+      - name: Prepare Pages site
         run: |
           rm -rf pages
           mkdir -p pages
 
-          if [ -f "dist/index.html" ]; then
-            echo "Using dist/index.html"
-            cp -R dist/. pages/
+          INDEX_FILE=$(find dist .output -type f -name "index.html" -not -path "*/node_modules/*" 2>/dev/null | head -n 1)
+          SHELL_FILE=$(find dist .output -type f -name "_shell.html" -not -path "*/node_modules/*" 2>/dev/null | head -n 1)
 
-          elif [ -f "dist/_shell.html" ]; then
-            echo "Using dist/_shell.html"
-            cp -R dist/. pages/
-            cp pages/_shell.html pages/index.html
+          if [ -n "$INDEX_FILE" ]; then
+            echo "Found index.html at: $INDEX_FILE"
 
-          elif [ -f ".output/public/index.html" ]; then
-            echo "Using .output/public/index.html"
-            cp -R .output/public/. pages/
+            SOURCE_DIR=$(dirname "$INDEX_FILE")
+            cp -R "$SOURCE_DIR"/. pages/
 
-          elif [ -f ".output/public/_shell.html" ]; then
-            echo "Using .output/public/_shell.html"
-            cp -R .output/public/. pages/
-            cp pages/_shell.html pages/index.html
+          elif [ -n "$SHELL_FILE" ]; then
+            echo "Found _shell.html at: $SHELL_FILE"
+
+            SOURCE_DIR=$(dirname "$SHELL_FILE")
+            cp -R "$SOURCE_DIR"/. pages/
+            cp "$SHELL_FILE" pages/index.html
 
           else
-            echo "ERROR: Could not find index.html or _shell.html"
-            echo "Build files:"
-            find . -maxdepth 5 -type f \( -name "index.html" -o -name "_shell.html" \) -print
+            echo "ERROR: No index.html or _shell.html was generated."
             exit 1
           fi
 
-          echo "===== PAGES OUTPUT ====="
-          find pages -maxdepth 3 -type f -print
+          echo "===== FINAL PAGES FILES ====="
+          find pages -maxdepth 4 -type f -print
+
+          echo "===== INDEX.HTML ====="
+          ls -lh pages/index.html
 
           test -f pages/index.html
 
@@ -91,7 +89,7 @@ jobs:
         with:
           enablement: true
 
-      - name: Upload website
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
           path: ./pages
