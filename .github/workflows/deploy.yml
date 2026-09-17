@@ -35,6 +35,57 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Check build output
+        run: |
+          echo "===== DIST ====="
+          if [ -d "dist" ]; then
+            find dist -maxdepth 3 -type f -print
+          else
+            echo "No dist directory"
+          fi
+
+          echo "===== OUTPUT ====="
+          if [ -d ".output" ]; then
+            find .output -maxdepth 4 -type f -print
+          else
+            echo "No .output directory"
+          fi
+
+      - name: Prepare GitHub Pages
+        run: |
+          rm -rf pages
+          mkdir -p pages
+
+          if [ -f "dist/index.html" ]; then
+            echo "Using dist/index.html"
+            cp -R dist/. pages/
+
+          elif [ -f "dist/_shell.html" ]; then
+            echo "Using dist/_shell.html"
+            cp -R dist/. pages/
+            cp pages/_shell.html pages/index.html
+
+          elif [ -f ".output/public/index.html" ]; then
+            echo "Using .output/public/index.html"
+            cp -R .output/public/. pages/
+
+          elif [ -f ".output/public/_shell.html" ]; then
+            echo "Using .output/public/_shell.html"
+            cp -R .output/public/. pages/
+            cp pages/_shell.html pages/index.html
+
+          else
+            echo "ERROR: Could not find index.html or _shell.html"
+            echo "Build files:"
+            find . -maxdepth 5 -type f \( -name "index.html" -o -name "_shell.html" \) -print
+            exit 1
+          fi
+
+          echo "===== PAGES OUTPUT ====="
+          find pages -maxdepth 3 -type f -print
+
+          test -f pages/index.html
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
         with:
@@ -43,7 +94,8 @@ jobs:
       - name: Upload website
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ./dist
+          path: ./pages
 
       - name: Deploy
+        id: deployment
         uses: actions/deploy-pages@v4
