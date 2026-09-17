@@ -27,7 +27,7 @@ export const memories = [
 
 // Replace this original demo melody with a licensed song file whenever desired.
 export const playlist = [
-  { title: "Perfect", artist: "Ed Sheeran", audio: "/music/Perfect.mp3" },
+  { title: "Perfect", artist: "Ed Sheeran", audio: "@/public/music/Perfect.mp3" },
 ];
 
 export const stageNames = [
